@@ -1,15 +1,24 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 from typing import List
 
 app = FastAPI()
 
+# Define your API key
+VALID_API_KEY = "munny123"
+
+# Request body model
 class Input(BaseModel):
     documents: str
     questions: List[str]
 
+# Endpoint with authentication
 @app.post("/api/v1/hackrx/run")
-async def run_query(data: Input):
+async def run_query(data: Input, authorization: str = Header(None)):
+    # Check Authorization header
+    if authorization != f"Bearer {VALID_API_KEY}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     responses = []
     for q in data.questions:
         if "grace" in q.lower():
@@ -21,4 +30,3 @@ async def run_query(data: Input):
         else:
             responses.append("This information is not explicitly mentioned in the policy.")
     return {"answers": responses}
- 
