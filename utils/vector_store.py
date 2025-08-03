@@ -1,6 +1,8 @@
 import openai
 
-openai.api_key = "your-openai-key"
+import os
+openai.api_key = os.getenv("OPENAI_API_KEY")  # ✅ Load from .env
+
 
 def get_answer(question: str, context: str) -> str:
     prompt = f"Answer the question based on the context below:\n\nContext:\n{context}\n\nQuestion: {question}"
