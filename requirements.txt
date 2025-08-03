@@ -3,4 +3,4 @@ uvicorn
 pydantic
 requests
 PyMuPDF
-openai
+openai==0.28
