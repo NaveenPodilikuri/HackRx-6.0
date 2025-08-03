@@ -1,32 +1,24 @@
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 from typing import List
+from utils.document_reader import extract_text_from_pdf
+from utils.vector_store import get_answer
+from utils.auth import verify_token
 
 app = FastAPI()
 
-# Define your API key
-VALID_API_KEY = "munny123"
-
-# Request body model
 class Input(BaseModel):
     documents: str
     questions: List[str]
 
-# Endpoint with authentication
 @app.post("/api/v1/hackrx/run")
-async def run_query(data: Input, authorization: str = Header(None)):
-    # Check Authorization header
-    if authorization != f"Bearer {VALID_API_KEY}":
+async def run_query(data: Input, authorization: str = Header(...)):
+    if not verify_token(authorization):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    responses = []
-    for q in data.questions:
-        if "grace" in q.lower():
-            responses.append("A grace period of thirty days is provided after the premium due date.")
-        elif "cataract" in q.lower():
-            responses.append("The policy has a waiting period of two (2) years for cataract surgery.")
-        elif "maternity" in q.lower():
-            responses.append("Maternity expenses are covered after 24 months of continuous coverage.")
-        else:
-            responses.append("This information is not explicitly mentioned in the policy.")
-    return {"answers": responses}
+    try:
+        context = extract_text_from_pdf(data.documents)
+        answers = [get_answer(q, context) for q in data.questions]
+        return {"answers": answers}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
